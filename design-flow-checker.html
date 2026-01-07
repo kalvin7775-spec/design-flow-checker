@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設計開發流程檢核系統 | PMIQP-014</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --bg-hover: #22222e;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #2a2a3a;
+            --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .logo-text h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-text span {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            border: none;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-blue);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Main Layout */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.25rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Project List */
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .project-item {
+            padding: 0.75rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .project-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .project-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent-blue);
+        }
+
+        .project-item h4 {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .project-item .meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .project-item .progress-mini {
+            height: 3px;
+            background: var(--bg-primary);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .project-item .progress-mini-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+            transition: width 0.3s;
+        }
+
+        /* Stage Navigation */
+        .stage-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .stage-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .stage-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .stage-item.active {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .stage-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stage-icon.p { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+        .stage-icon.c { background: rgba(139, 92, 246, 0.2); color: var(--accent-purple); }
+
+        .stage-status {
+            margin-left: auto;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .stage-status.complete { color: var(--accent-green); }
+        .stage-status.in-progress { color: var(--accent-yellow); }
+
+        /* Content Area */
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Project Info Card */
+        .project-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .info-item {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .info-item label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-item input {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .info-item input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* Progress Overview */
+        .progress-overview {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(6, 182, 212, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-percentage {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .progress-bar-large {
+            height: 12px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan), var(--accent-green));
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-stats {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .stat-dot.complete { background: var(--accent-green); }
+        .stat-dot.pending { background: var(--accent-yellow); }
+        .stat-dot.not-started { background: var(--text-muted); }
+
+        /* Checklist */
+        .checklist-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .checklist-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .checklist-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .checklist-title h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .checklist-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .checklist-badge.p {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue);
+        }
+
+        .checklist-badge.c {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-purple);
+        }
+
+        .checklist-items {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .checklist-item {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 1rem;
+            transition: background 0.2s;
+        }
+
+        .checklist-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+
+        .check-box {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .check-box:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .check-box.checked {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .check-box.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .checklist-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .checklist-step {
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-cyan);
+            margin-bottom: 0.25rem;
+        }
+
+        .checklist-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+
+        .checklist-text.completed {
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .checklist-meta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .checklist-form, .checklist-ce {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        .checklist-note {
+            margin-top: 0.5rem;
+        }
+
+        .checklist-note input {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.4rem 0.6rem;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-family: inherit;
+        }
+
+        .checklist-note input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions {
+                justify-content: center;
+            }
+
+            .progress-stats {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .checklist-item {
+                flex-direction: column;
+            }
+
+            .check-box {
+                align-self: flex-start;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            .header, .sidebar, .btn {
+                display: none;
+            }
+            .main-container {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📋</div>
+                <div class="logo-text">
+                    <h1>設計開發流程檢核系統</h1>
+                    <span>PMIQP-014</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="exportExcel()">
+                    <span>📊</span> 匯出 Excel
+                </button>
+                <button class="btn btn-secondary" onclick="exportPDF()">
+                    <span>📄</span> 匯出 PDF
+                </button>
+                <button class="btn btn-secondary" onclick="syncData()">
+                    <span>🔄</span> 同步
+                </button>
+                <button class="btn btn-primary" onclick="showNewProjectModal()">
+                    <span>➕</span> 新增專案
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <aside class="sidebar">
+            <!-- Project List -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">專案列表</span>
+                    <span id="projectCount">0 個專案</span>
+                </div>
+                <div class="project-list" id="projectList">
+                    <div class="empty-state" style="padding: 2rem 1rem;">
+                        <p>尚無專案</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage Navigation -->
+            <div class="card" id="stageNavCard" style="display: none;">
+                <div class="card-header">
+                    <span class="card-title">流程階段</span>
+                </div>
+                <nav class="stage-nav" id="stageNav"></nav>
+            </div>
+        </aside>
+
+        <section class="content" id="contentArea">
+            <div class="empty-state">
+                <div class="empty-state-icon">📦</div>
+                <h3>歡迎使用設計開發流程檢核系統</h3>
+                <p>點擊「新增專案」開始追蹤您的產品開發進度</p>
+                <button class="btn btn-primary" onclick="showNewProjectModal()">
+                    <span>➕</span> 新增第一個專案
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- New Project Modal -->
+    <div class="modal-overlay" id="newProjectModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新增專案</h3>
+                <button class="modal-close" onclick="closeModal('newProjectModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>專案名稱 *</label>
+                    <input type="text" id="projectName" placeholder="例：XX 醫療器材開發案">
+                </div>
+                <div class="form-group">
+                    <label>專案代號</label>
+                    <input type="text" id="projectCode" placeholder="例：PRJ-2024-001">
+                </div>
+                <div class="form-group">
+                    <label>專案負責人</label>
+                    <input type="text" id="projectOwner" placeholder="負責人姓名">
+                </div>
+                <div class="form-group">
+                    <label>產品類型</label>
+                    <select id="projectType">
+                        <option value="new">新產品</option>
+                        <option value="variant">變化品</option>
+                        <option value="custom">訂製品</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('newProjectModal')">取消</button>
+                <button class="btn btn-primary" onclick="createProject()">建立專案</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>確認刪除</h3>
+                <button class="modal-close" onclick="closeModal('deleteModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <p>確定要刪除此專案嗎？此操作無法復原。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('deleteModal')">取消</button>
+                <button class="btn btn-danger" onclick="confirmDeleteProject()">刪除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 流程階段定義
+        const STAGES = [
+            { id: 'P0', name: '產品規劃階段', type: 'P' },
+            { id: 'C0', name: '可行性審查', type: 'C' },
+            { id: 'P1', name: '設計階段', type: 'P' },
+            { id: 'C1', name: '設計審查', type: 'C' },
+            { id: 'P2', name: '開發階段', type: 'P' },
+            { id: 'C2', name: '開發階段審查', type: 'C' },
+            { id: 'P3', name: '試量產階段', type: 'P' },
+            { id: 'C3', name: '試量產審查', type: 'C' }
+        ];
+
+        // 各階段檢核項目
+        const CHECKLIST_DATA = {
+            'P0': [
+                { step: '1-1', item: '開發構想', content: 'A. 由業務部或經營管理層考慮市場趨勢及公司之產品策略，主動提出之開發案。', form: '' },
+                { step: '1-2', item: '開發構想', content: 'B. 由業務部與客戶協商提出之開發案。', form: '' },
+                { step: '1-3', item: '開發構想', content: 'C. 由研發部主管提出，經總經理以上主管核可之開發案。', form: '' },
+                { step: '2', item: '構想形成', content: '提案人應與指派之開發人員協調，將設計輸入的資訊整理於「產品規劃書」中；而為佐證產品使用目的、規格等設計輸入資訊所需的圖面、技術資料，都將列於「設計開發進度日程表」中。', form: '產品規劃書、設計開發進度日程表' },
+                { step: '3-1', item: '追溯性', content: 'A. 藉由「設計開發進度日程表」所列各項設計記錄輸出物，來核對 DHF 中的各項設計記錄，以確保設計輸入能追蹤到各項設計輸出。', form: '設計開發進度日程表' },
+                { step: '3-2', item: '追溯性', content: 'B. 從「新產品測試報告表」，可由產品規格追溯到測試結果及報告，以確保設計輸出能符合設計輸入的要求。', form: '新產品測試報告表' },
+                { step: '4', item: '人員資格', content: '產品開發案之專案開發人員由總經理依「教育訓練管制程序」開發人員之限定資格指派適當人選擔任。', form: '' }
+            ],
+            'C0': [
+                { step: '1', item: '前置作業', content: '提案人應於專案負責人的協助下準備可行性審查會議', form: '' },
+                { step: '2', item: '前置作業', content: 'A. 產品規劃書經總經理核准。', form: '產品規劃書' },
+                { step: '3', item: '前置作業', content: 'B. 協調會議召開之時間，並於會議召開前一週以「設計審查會議通知單」通知相關人員。', form: '設計審查會議通知單' },
+                { step: '4', item: '前置作業', content: 'C. 會議中審查之文件應於會議前備妥。', form: '' },
+                { step: '5', item: '評估專案可行性', content: '可行性審查會議中，各參加人員應就其專業性考慮下列因素：產品規劃書所列項目、設計開發預估進度、成本分析、物料之取得、製造可行性、量產後產品檢驗之能力、專案負責人及工程師之資格審查', form: '' },
+                { step: '6', item: '會議記錄', content: '可行性審查會議之進行應針對上列項目逐項充分討論，並將審查過程詳載於「設計審查會議會議記錄表」，始完成審查。', form: '設計審查會議會議記錄表' },
+                { step: '7', item: '爭議項目處理', content: '若有爭議性項目導致無法於本次會議完成審查，則應責成專案負責人針對爭議點深入研究，並於準備完成後，另開一次可行性審查會完成該爭議性項目之審查。', form: '' },
+                { step: '8', item: '完成事項', content: 'A. 修改後之產品規劃書、設計開發進度日程表經總經理核准後，由專案負責人保管並執行。', form: '產品規劃書、設計開發進度日程表' },
+                { step: '9', item: '完成事項', content: 'B. 經總經理核准之會議記錄交專案負責人保管執行。', form: '會議記錄' },
+                { step: '10', item: '完成事項', content: 'C. 備齊可行性審查會決議之相關技術資料交專案負責人保管執行。', form: '決議之相關技術資料' },
+                { step: '11', item: '完成事項', content: 'D. 專案負責人應將本開發案登錄於「設計開發總覽表」，進入設計階段。', form: '設計開發總覽表' }
+            ],
+            'P1': [
+                { step: '1', item: '設計階段開始', content: 'C0之結果必須經總經理核准，始可進入設計階段。經指派之研發人員應依據產品規劃書及設計開發時程進度表之內容，參考相關之設計準則，進行圖面與技術規格之設計。', form: '產品規劃書、設計開發時程進度表' },
+                { step: '2', item: '產品設計', content: 'A. 產品規格設計：由專案負責人將設計輸入要求制作成新產品之規格，並載明於「產品規格書」中。', form: '產品規格書' },
+                { step: '3', item: '產品設計', content: 'B. 電子設計：由電子工程師依據產品規格書進行電路設計，並以製作工作樣本（Working Sample）驗證其設計，於確認無誤後，完成工作樣本並將電路圖定案。', form: '製作工作樣本' },
+                { step: '4', item: '產品設計', content: 'C. 機構設計：由機構工程師依據產品規格書進行塑膠、金屬，基板等機構零件之尺寸、公差、材料與模具之設計，並完成相關圖面及/或技術資料。', form: '產品規格書、相關圖面及/或技術資料' },
+                { step: '5', item: '產品設計', content: 'D. 軟體設計：由軟體工程師，依據產品規格書所示之各項產品功能/性能，針對須藉由軟體驅動的項目，進行軟體的設計，並制作出軟體需求規格、軟體設計規格、流程圖及來源碼等技術資料，並依 IEC 62304 執行軟體確效並製作報告。', form: '技術資料、執行軟體確效並製作報告', ce: '執行軟體確效並製作報告' },
+                { step: '6', item: '功能驗證', content: 'E. 功能驗證: (如果有製作工程樣品即須執行)專案負責人應對本階段所產出之工作樣本，依據產品規格書進行測試、分析或模擬，以驗證設計輸出是否符合設計輸入要求，驗證結果應做成「新產品測試報告表」。', form: '新產品測試報告表' },
+                { step: '7', item: '風險分析', content: 'F. 依據可利用的資訊及過去的經驗，對產品執行安全性之風險分析，以評估產品安全風險之可接受性。風險分析之執行方式，依「風險管理辦法」來執行。', form: '風險管理辦法' },
+                { step: '8', item: '委外設計', content: '當產品之部份（或全部）設計項目須委託外部設計公司執行設計時，研發部專案負責人必須以書面的方式載明設計要求，設計結果須經研發團隊執行審查及/或必要的驗證之後，才可正式驗收。', form: '書面載明設計要求、各項設計結果' },
+                { step: '9', item: '新產品測試報告表', content: 'A. 開發案負責人亦應進行試驗項目（含尺寸、外觀、性能與耐久性試驗）之規劃，規劃內容須載明於設計階段之「新產品測試報告表」', form: '新產品測試報告表' },
+                { step: '10', item: '新產品測試計劃', content: 'B. 針對各項功能/性能測試的方法，研發部應製作「新產品測試計劃」，做為設計與開發階段產品設計驗證的依據。', form: '新產品測試計劃' },
+                { step: '11', item: '包裝設計', content: '包裝設計【含標籤及型錄、包裝內外箱（盒）之尺寸，材質】，須載明於「包裝規格書」', form: '包裝規格書', ce: '包裝資料(PMIQR-013)、使用手冊' },
+                { step: '12', item: 'BOM建立', content: '開始建立初步BOM，進行零組件承認。', form: 'BOM', ce: 'BOM' },
+                { step: '13', item: '關鍵零組件', content: '準備關鍵零組件資料。', form: '關鍵零組件資料', ce: '關鍵零組件資料' },
+                { step: '14', item: '設計輸出', content: '當設計階段，專案研發人員應備妥：A.工作樣本 B.電路圖 C.新產品測試報告表 D.包裝規格書 E.關鍵零組件資料 F.成品圖 G.產品機構組件之圖面 H.產品爆炸圖 I.成本概估(BOM草案) J.PCB Layout圖 K.其他特殊要求之技術資料 L.風險管理報告', form: '' }
+            ],
+            'C1': [
+                { step: '1', item: '會議通知', content: '設計階段完成後，專案負責人應準備設計審查會議（C1），並於會議召開前一週以「設計審查會議通知單」通知相關人員。', form: '設計審查會議通知單' },
+                { step: '2-1', item: '審查項目', content: 'A. 產品規格書', form: '產品規格書' },
+                { step: '2-2', item: '審查項目', content: 'B. 電路設計：是否符合產品規格要求？電路圖、PCB Layout 圖審查。', form: '電路圖、PCB Layout 圖' },
+                { step: '2-3', item: '審查項目', content: 'C. 機構設計：是否符合產品規格要求？成品圖、產品機構組件之圖面、產品爆炸圖審查。', form: '成品圖、產品機構組件之圖面、產品爆炸圖' },
+                { step: '2-4', item: '審查項目', content: 'D. 軟體設計結果', form: '軟體設計' },
+                { step: '2-5', item: '審查項目', content: 'E. 設計階段之「新產品測試報告表」及新產品測試計劃審查', form: '' },
+                { step: '2-6', item: '審查項目', content: 'F. 關鍵零組件資料審查', form: '關鍵零組件資料' },
+                { step: '2-7', item: '審查項目', content: 'G. 包裝規格書審查', form: '包裝規格書' },
+                { step: '2-8', item: '審查項目', content: 'H. 成本估算(含BOM)審查', form: 'BOM' },
+                { step: '2-9', item: '審查項目', content: 'I. 風險管理報告之審查', form: '風險管理報告', ce: '風險管理報告' },
+                { step: '2-10', item: '審查項目', content: 'J. 決定技術試作樣品數量。', form: '' },
+                { step: '3', item: '會議紀錄', content: '設計審查會議之進行應針對上列項目逐項充分討論，並將審查過程詳載於「設計審查會議記錄表」，始完成審查。', form: '設計審查會議記錄表' },
+                { step: '4', item: '完成項目', content: '設計審查完成後，專案負責人應完成：A.經總經理核准之會議記錄 B.依設計審查會之決議事項，修改產品規格書、各種圖面、新產品測試報告表、包裝規格書、BOM草案、其他特殊要求之技術資料、風險管理報告', form: '' }
+            ],
+            'P2': [
+                { step: '1', item: '模具發包', content: 'A. 依據採購管制程序進行模具（含 PCB、金屬、塑膠）發包。', form: '' },
+                { step: '2', item: '樣品製作', content: 'B. 樣品製作（含包裝）：依照產品之圖面、包裝規格書及相關的技術資料等由開發案負責人指導製造部，以實物製成樣品，以進行產品驗證。', form: '', ce: '包裝資料(PMIQR-013)、使用手冊' },
+                { step: '3', item: '產品設計驗證', content: 'C. 產品設計驗證：由品管部主管會同開發案負責人依據「新產品試機測試報告表」規定項目及新產品測試計劃之規定進行產品驗證。', form: '新產品試機測試報告表' },
+                { step: '4', item: '製造文件', content: 'D. 著手規劃並完成製造文件：a.研發部 b.品管部：QC工程表、檢驗作業指導書 c.製造部：作業指導書', form: 'QC工程表、檢驗作業指導書、作業指導書' },
+                { step: '5', item: '專利申請', content: 'E. 專利申請', form: '' },
+                { step: '6', item: '安規申請', content: 'F. 安規申請：若需要時，由研發部負責產品安規之工程師，向產品驗證單位提出申請。', form: '', ce: '安規測試' },
+                { step: '7', item: '零件承認與BOM', content: 'G. 依據本程序，完成零件承認並提出 BOM。', form: '零件承認、BOM', ce: '零件承認、BOM' },
+                { step: '8', item: '送樣承認', content: 'H. 送樣承認：當客戶要求時，研發部應依「業務作業管制程序」配合業務部進行送樣承認。', form: '' },
+                { step: '9', item: '設備取得', content: 'I. 生產機器及量測儀器之取得：若本開發案須使用新的生產機器及量測儀器，則應依「採購管制程序」進行採購。', form: '' },
+                { step: '10', item: '部門溝通', content: '開發階段因涉及跨部門之分工，故開發案負責人應負責協調各部門，若牽涉到設計資訊之傳遞時，應載明於工程連絡單通知相關單位。', form: '工程連絡單' },
+                { step: '11', item: '設計確效-內部', content: 'A. 本公司內部進行之設計驗收【確效】：由專案負責人擇定模擬使用者，將使用心得填寫於「設計驗收記錄表」。', form: '設計驗收記錄表', ce: 'Usability Engineering' },
+                { step: '12', item: '設計確效-客戶', content: 'B. 客戶驗收：將樣品寄送給客戶使用，並請客戶告之其驗收結果。', form: '' },
+                { step: '13', item: '設計確效-臨床調查', content: 'C. 臨床調查評估：當新開發產品須執行臨床調查時，由研發團隊制作「臨床試驗計劃書」。', form: '臨床試驗計劃書' },
+                { step: '14', item: '設計確效-臨床評估', content: 'D. 臨床評估（科技文獻評估）：由研發部工程師依已發佈的科技文獻進行評估，並制作臨床評估報告。', form: '臨床評估', ce: '臨床評估（科技文獻評估）' }
+            ],
+            'C2': [
+                { step: '1', item: '會議通知', content: '開發階段完成後，開發案負責人應準備設計驗證與驗收審查會議（C2），並於會議召開前1週以「設計審查會議通知單」通知相關人員。', form: '設計審查會議通知單' },
+                { step: '2-A', item: '審查項目', content: 'A. 新產品試驗結果是否符合規定（尺寸、外觀、功能、性能）要求？軟體程式的確效結果審查？', form: '' },
+                { step: '2-B', item: '審查項目', content: 'B. 客戶之零件承認是否完成？其注意事項為何？', form: '' },
+                { step: '2-C', item: '審查項目', content: 'C. 設計驗收（或臨床評估）結果是否符合法規/標準及/或使用者要求？', form: '' },
+                { step: '2-D', item: '審查項目', content: 'D. 製造文件是否完成？其內容是否可行並完整？', form: '' },
+                { step: '2-E', item: '審查項目', content: 'E. 生產機器設備、治工具及其必要的使用說明文件是否準備完成？', form: '' },
+                { step: '2-F', item: '審查項目', content: 'F. 量測設備及測試治具及其必要的使用說明文件是否準備完成？', form: '' },
+                { step: '2-G', item: '審查項目', content: 'G. 產品包裝（含必要之說明書）是否完成？是否符合規定要求？', form: '' },
+                { step: '2-H', item: '審查項目', content: 'H. 新添購的硬軟體生產、檢測設備之訂購、製作情形？', form: '' },
+                { step: '2-I', item: '審查項目', content: 'I. 專利之進行狀況？', form: '' },
+                { step: '2-J', item: '審查項目', content: 'J. 零件承認及 BOM 是否完成？', form: '' },
+                { step: '2-K', item: '審查項目', content: 'K. 安規申請進度。', form: '' },
+                { step: '2-L', item: '審查項目', content: 'L. 決定試量產階段之時機及試量產之數量。', form: '' },
+                { step: '2-M', item: '審查項目', content: 'M. 決定試量產階段之抽樣檢驗方式與數量。', form: '' },
+                { step: '3', item: '會議記錄', content: '開發階段審查會議之進行應針對所列項目逐項充分討論，並將審查過程詳載於「設計審查會議記錄表」，始完成審查。', form: '設計審查會議記錄表' },
+                { step: '4', item: '完成事項', content: '開發階段審查完成後，專案負責人應完成：A.經總經理核准之會議記錄 B.依決議發行各種圖面、製造文件等', form: '' },
+                { step: '5', item: '設計轉移', content: '初步的設計轉移（試量產前會議），必要時，研發部將召集相關單位，召開試量產前會議。', form: '' }
+            ],
+            'P3': [
+                { step: '1', item: '製程確效', content: '如果有特殊製程的話，且在 P2 階段尚未執行 3Q 確效，則應在正式試量產前對特殊製程進行製程 3Q 確效，並製作製程確效（3Q）報告。', form: '製程確效（3Q）報告' },
+                { step: '2', item: '試量產執行', content: '試量產階段由研發部指導，各部門必須視同量產依本公司GMP+ISO 13485之程序書、工作標準規定實施。並由專案負責人指定專人，將試量產之執行情形及檢驗結果作成「試量產報告」。', form: '試量產報告' },
+                { step: '3', item: '試量產設計驗證', content: '對於試量產合格批的合格產品，必須依具統計基礎的抽樣方式抽取樣品，以試量產的合格品進行產品設計驗證，並將結果記載於「新產品測試報告表」。', form: '新產品測試報告表' },
+                { step: '4', item: '不合格品處理', content: '上述所發現的不合格品，依「不合格品管制程序」處置，並於必要時依「矯正與預防措施管制程序」，提出矯正措施跟催至結案。', form: '' }
+            ],
+            'C3': [
+                { step: '1', item: '會議通知', content: '試量產階段完成後，專案負責人應準備量產前審查會議（C3），並於會議召開前1週以「設計審查會議通知單」通知相關人員。', form: '設計審查會議通知單' },
+                { step: '2-A', item: '審查項目', content: 'A. 試量產報告及各項檢測結果之審查。', form: '' },
+                { step: '2-B', item: '審查項目', content: 'B. 如適用時，特殊製程之製程確效結果之審查', form: '' },
+                { step: '2-C', item: '審查項目', content: 'C. 設計驗收(臨床評估)執行結果之審查。', form: '' },
+                { step: '2-D', item: '審查項目', content: 'D. 安規/安全性測試結果之審查。', form: '' },
+                { step: '2-E', item: '審查項目', content: 'E. 試量產設計驗證之執行情形？', form: '' },
+                { step: '2-F', item: '審查項目', content: 'F. 針對各式圖面、技術資料、作業指導書等進行全面檢討並提供必要之修正意見。', form: '' },
+                { step: '2-G', item: '審查項目', content: 'G. 審查治工具、機器設備是否足以達成要求品質及產能。', form: '' },
+                { step: '2-H', item: '審查項目', content: 'H. 審查量測儀器是否足以測量要求之精度。', form: '' },
+                { step: '2-I', item: '審查項目', content: 'I. 審查各檢驗與測試記錄以判斷本新產品之開發是否達量產條件。', form: '' },
+                { step: '2-J', item: '審查項目', content: 'J. 針對試量產階段發現之不合格品之處置及其矯正與預防措施予以評估。', form: '' },
+                { step: '3', item: '會議記錄', content: '試量產審查會議之進行應針對上述項目逐項充分討論，並將審查過程詳載於「設計審查會議記錄表」，始完成審查。', form: '設計審查會議記錄表' },
+                { step: '4-A', item: '完成事項', content: 'A. 管理代表應依據會議記錄之決議督促各權責單位發行相關之製造文件、圖面與技術資料。', form: '' },
+                { step: '4-B', item: '完成事項', content: 'B. 必要時，管理代表應督促各權責單位備妥相關治工具、機器設備。', form: '' },
+                { step: '4-C', item: '完成事項', content: 'C. 專案負責人應整理設計開發過程資料，以累積技術資源。', form: '' },
+                { step: '4-D', item: '完成事項', content: 'D. 設計驗收(臨床試驗)之執行結果報告。', form: '' },
+                { step: '4-E', item: '完成事項', content: 'E. 各項安規/安全性測試報告。', form: '' },
+                { step: '4-F', item: '完成事項', content: 'F. 以上事項之工作結果呈總經理核准，於設計開發日程表簽署後結案。', form: '' }
+            ]
+        };
+
+        // 全域變數
+        let projects = [];
+        let currentProjectId = null;
+        let currentStage = 'P0';
+        let deleteTargetId = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProjects();
+            renderProjectList();
+        });
+
+        // LocalStorage 操作
+        function loadProjects() {
+            const saved = localStorage.getItem('designFlowProjects');
+            projects = saved ? JSON.parse(saved) : [];
+        }
+
+        function saveProjects() {
+            localStorage.setItem('designFlowProjects', JSON.stringify(projects));
+        }
+
+        // 專案列表渲染
+        function renderProjectList() {
+            const list = document.getElementById('projectList');
+            const count = document.getElementById('projectCount');
+            
+            count.textContent = `${projects.length} 個專案`;
+
+            if (projects.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state" style="padding: 2rem 1rem;">
+                        <p>尚無專案</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = projects.map(p => {
+                const progress = calculateProjectProgress(p);
+                return `
+                    <div class="project-item ${p.id === currentProjectId ? 'active' : ''}" onclick="selectProject('${p.id}')">
+                        <h4>${p.name}</h4>
+                        <div class="meta">
+                            <span>${p.code || '未設代號'}</span>
+                            <span>${getProductTypeName(p.type)}</span>
+                        </div>
+                        <div class="progress-mini">
+                            <div class="progress-mini-fill" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getProductTypeName(type) {
+            const types = { new: '新產品', variant: '變化品', custom: '訂製品' };
+            return types[type] || type;
+        }
+
+        // 計算專案進度
+        function calculateProjectProgress(project) {
+            if (!project.checklist) return 0;
+            
+            let total = 0;
+            let completed = 0;
+
+            STAGES.forEach(stage => {
+                const items = CHECKLIST_DATA[stage.id] || [];
+                total += items.length;
+                items.forEach((item, idx) => {
+                    if (project.checklist[stage.id]?.[idx]?.checked) {
+                        completed++;
+                    }
+                });
+            });
+
+            return total > 0 ? Math.round((completed / total) * 100) : 0;
+        }
+
+        // 計算階段進度
+        function calculateStageProgress(project, stageId) {
+            const items = CHECKLIST_DATA[stageId] || [];
+            if (items.length === 0) return { completed: 0, total: 0, percent: 0 };
+
+            let completed = 0;
+            items.forEach((item, idx) => {
+                if (project.checklist?.[stageId]?.[idx]?.checked) {
+                    completed++;
+                }
+            });
+
+            return {
+                completed,
+                total: items.length,
+                percent: Math.round((completed / items.length) * 100)
+            };
+        }
+
+        // 選擇專案
+        function selectProject(projectId) {
+            currentProjectId = projectId;
+            currentStage = 'P0';
+            renderProjectList();
+            renderStageNav();
+            renderContent();
+            document.getElementById('stageNavCard').style.display = 'block';
+        }
+
+        // 渲染階段導航
+        function renderStageNav() {
+            const nav = document.getElementById('stageNav');
+            const project = projects.find(p => p.id === currentProjectId);
+
+            nav.innerHTML = STAGES.map(stage => {
+                const progress = calculateStageProgress(project, stage.id);
+                let statusClass = '';
+                let statusText = `${progress.completed}/${progress.total}`;
+                
+                if (progress.percent === 100) {
+                    statusClass = 'complete';
+                    statusText = '✓ 完成';
+                } else if (progress.completed > 0) {
+                    statusClass = 'in-progress';
+                }
+
+                return `
+                    <div class="stage-item ${stage.id === currentStage ? 'active' : ''}" onclick="selectStage('${stage.id}')">
+                        <div class="stage-icon ${stage.type.toLowerCase()}">${stage.id}</div>
+                        <span>${stage.name}</span>
+                        <span class="stage-status ${statusClass}">${statusText}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 選擇階段
+        function selectStage(stageId) {
+            currentStage = stageId;
+            renderStageNav();
+            renderContent();
+        }
+
+        // 渲染主要內容
+        function renderContent() {
+            const content = document.getElementById('contentArea');
+            const project = projects.find(p => p.id === currentProjectId);
+
+            if (!project) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <h3>歡迎使用設計開發流程檢核系統</h3>
+                        <p>點擊「新增專案」開始追蹤您的產品開發進度</p>
+                        <button class="btn btn-primary" onclick="showNewProjectModal()">
+                            <span>➕</span> 新增第一個專案
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const totalProgress = calculateProjectProgress(project);
+            const stageProgress = calculateStageProgress(project, currentStage);
+            const stage = STAGES.find(s => s.id === currentStage);
+            const items = CHECKLIST_DATA[currentStage] || [];
+
+            // 計算統計
+            let totalItems = 0, completedItems = 0;
+            STAGES.forEach(s => {
+                const sItems = CHECKLIST_DATA[s.id] || [];
+                totalItems += sItems.length;
+                sItems.forEach((item, idx) => {
+                    if (project.checklist?.[s.id]?.[idx]?.checked) completedItems++;
+                });
+            });
+
+            content.innerHTML = `
+                <!-- 專案資訊 -->
+                <div class="project-info">
+                    <div class="info-item">
+                        <label>專案名稱</label>
+                        <input type="text" value="${project.name}" onchange="updateProjectInfo('name', this.value)">
+                    </div>
+                    <div class="info-item">
+                        <label>專案代號</label>
+                        <input type="text" value="${project.code || ''}" onchange="updateProjectInfo('code', this.value)">
+                    </div>
+                    <div class="info-item">
+                        <label>專案負責人</label>
+                        <input type="text" value="${project.owner || ''}" onchange="updateProjectInfo('owner', this.value)">
+                    </div>
+                    <div class="info-item">
+                        <label>建立日期</label>
+                        <input type="text" value="${new Date(project.createdAt).toLocaleDateString('zh-TW')}" readonly style="opacity: 0.7;">
+                    </div>
+                </div>
+
+                <!-- 總進度 -->
+                <div class="progress-overview">
+                    <div class="progress-header">
+                        <div>
+                            <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">整體進度</h3>
+                            <p style="color: var(--text-muted); font-size: 0.85rem;">共 ${STAGES.length} 個階段</p>
+                        </div>
+                        <div class="progress-percentage">${totalProgress}%</div>
+                    </div>
+                    <div class="progress-bar-large">
+                        <div class="progress-bar-fill" style="width: ${totalProgress}%"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <div class="stat-item">
+                            <span class="stat-dot complete"></span>
+                            <span>已完成 ${completedItems} 項</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-dot pending"></span>
+                            <span>待完成 ${totalItems - completedItems} 項</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-dot not-started"></span>
+                            <span>共 ${totalItems} 項檢核</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 檢核清單 -->
+                <div class="checklist-container">
+                    <div class="checklist-header">
+                        <div class="checklist-title">
+                            <span class="checklist-badge ${stage.type.toLowerCase()}">${stage.id}</span>
+                            <h2>${stage.name}</h2>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">
+                                ${stageProgress.completed} / ${stageProgress.total} 完成
+                            </span>
+                            <button class="btn btn-danger" onclick="showDeleteModal('${project.id}')" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                                🗑️ 刪除專案
+                            </button>
+                        </div>
+                    </div>
+                    <div class="checklist-items">
+                        ${items.map((item, idx) => {
+                            const checked = project.checklist?.[currentStage]?.[idx]?.checked || false;
+                            const note = project.checklist?.[currentStage]?.[idx]?.note || '';
+                            return `
+                                <div class="checklist-item">
+                                    <div class="check-box ${checked ? 'checked' : ''}" onclick="toggleCheck(${idx})"></div>
+                                    <div class="checklist-content">
+                                        <div class="checklist-step">步驟 ${item.step} - ${item.item}</div>
+                                        <div class="checklist-text ${checked ? 'completed' : ''}">${item.content}</div>
+                                        <div class="checklist-meta">
+                                            ${item.form ? `<span class="checklist-form">📋 ${item.form}</span>` : ''}
+                                            ${item.ce ? `<span class="checklist-ce">🇪🇺 ${item.ce}</span>` : ''}
+                                        </div>
+                                        <div class="checklist-note">
+                                            <input type="text" placeholder="備註..." value="${note}" onchange="updateNote(${idx}, this.value)">
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 切換檢核狀態
+        function toggleCheck(index) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            if (!project.checklist) project.checklist = {};
+            if (!project.checklist[currentStage]) project.checklist[currentStage] = {};
+            if (!project.checklist[currentStage][index]) project.checklist[currentStage][index] = {};
+
+            project.checklist[currentStage][index].checked = !project.checklist[currentStage][index].checked;
+            
+            saveProjects();
+            renderStageNav();
+            renderContent();
+        }
+
+        // 更新備註
+        function updateNote(index, value) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            if (!project.checklist) project.checklist = {};
+            if (!project.checklist[currentStage]) project.checklist[currentStage] = {};
+            if (!project.checklist[currentStage][index]) project.checklist[currentStage][index] = {};
+
+            project.checklist[currentStage][index].note = value;
+            saveProjects();
+        }
+
+        // 更新專案資訊
+        function updateProjectInfo(field, value) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            project[field] = value;
+            saveProjects();
+            renderProjectList();
+        }
+
+        // Modal 操作
+        function showNewProjectModal() {
+            document.getElementById('newProjectModal').classList.add('show');
+            document.getElementById('projectName').value = '';
+            document.getElementById('projectCode').value = '';
+            document.getElementById('projectOwner').value = '';
+            document.getElementById('projectType').value = 'new';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        function showDeleteModal(projectId) {
+            deleteTargetId = projectId;
+            document.getElementById('deleteModal').classList.add('show');
+        }
+
+        // 建立專案
+        function createProject() {
+            const name = document.getElementById('projectName').value.trim();
+            if (!name) {
+                alert('請輸入專案名稱');
+                return;
+            }
+
+            const newProject = {
+                id: 'proj_' + Date.now(),
+                name: name,
+                code: document.getElementById('projectCode').value.trim(),
+                owner: document.getElementById('projectOwner').value.trim(),
+                type: document.getElementById('projectType').value,
+                createdAt: new Date().toISOString(),
+                checklist: {}
+            };
+
+            projects.push(newProject);
+            saveProjects();
+            closeModal('newProjectModal');
+            selectProject(newProject.id);
+        }
+
+        // 刪除專案
+        function confirmDeleteProject() {
+            projects = projects.filter(p => p.id !== deleteTargetId);
+            saveProjects();
+            closeModal('deleteModal');
+            
+            if (currentProjectId === deleteTargetId) {
+                currentProjectId = null;
+                document.getElementById('stageNavCard').style.display = 'none';
+            }
+            
+            renderProjectList();
+            renderContent();
+        }
+
+        // 同步功能（使用 URL hash 模擬）
+        function syncData() {
+            const dataStr = JSON.stringify(projects);
+            const encoded = btoa(encodeURIComponent(dataStr));
+            
+            // 複製到剪貼簿
+            navigator.clipboard.writeText(encoded).then(() => {
+                const importData = prompt('同步資料已複製到剪貼簿！\n\n如要匯入其他裝置的資料，請貼上同步碼：');
+                if (importData && importData.trim()) {
+                    try {
+                        const decoded = decodeURIComponent(atob(importData.trim()));
+                        const imported = JSON.parse(decoded);
+                        if (Array.isArray(imported)) {
+                            projects = imported;
+                            saveProjects();
+                            renderProjectList();
+                            alert('同步成功！');
+                        }
+                    } catch (e) {
+                        alert('同步碼無效，請確認格式正確');
+                    }
+                }
+            }).catch(() => {
+                alert('無法存取剪貼簿');
+            });
+        }
+
+        // 匯出 Excel
+        function exportExcel() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) {
+                alert('請先選擇專案');
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            
+            // 總覽頁
+            const overviewData = [
+                ['設計開發流程檢核報告'],
+                [],
+                ['專案名稱', project.name],
+                ['專案代號', project.code || ''],
+                ['專案負責人', project.owner || ''],
+                ['建立日期', new Date(project.createdAt).toLocaleDateString('zh-TW')],
+                ['匯出日期', new Date().toLocaleDateString('zh-TW')],
+                ['整體進度', calculateProjectProgress(project) + '%'],
+                [],
+                ['階段', '名稱', '完成數', '總數', '進度']
+            ];
+
+            STAGES.forEach(stage => {
+                const progress = calculateStageProgress(project, stage.id);
+                overviewData.push([
+                    stage.id,
+                    stage.name,
+                    progress.completed,
+                    progress.total,
+                    progress.percent + '%'
+                ]);
+            });
+
+            const wsOverview = XLSX.utils.aoa_to_sheet(overviewData);
+            XLSX.utils.book_append_sheet(wb, wsOverview, '總覽');
+
+            // 各階段詳細頁
+            STAGES.forEach(stage => {
+                const items = CHECKLIST_DATA[stage.id] || [];
+                const sheetData = [
+                    [stage.id + ' - ' + stage.name],
+                    [],
+                    ['步驟', '項目', '內容', '重要表單', 'CE文件', '完成', '備註']
+                ];
+
+                items.forEach((item, idx) => {
+                    const checked = project.checklist?.[stage.id]?.[idx]?.checked ? '✓' : '';
+                    const note = project.checklist?.[stage.id]?.[idx]?.note || '';
+                    sheetData.push([
+                        item.step,
+                        item.item,
+                        item.content,
+                        item.form || '',
+                        item.ce || '',
+                        checked,
+                        note
+                    ]);
+                });
+
+                const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                XLSX.utils.book_append_sheet(wb, ws, stage.id);
+            });
+
+            XLSX.writeFile(wb, `${project.name}_檢核報告_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        // 匯出 PDF
+        function exportPDF() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) {
+                alert('請先選擇專案');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // 設定字體（使用內建字體，中文會顯示為方塊，建議用戶用瀏覽器列印功能）
+            doc.setFontSize(20);
+            doc.text('Design Development Checklist Report', 20, 20);
+            
+            doc.setFontSize(12);
+            doc.text(`Project: ${project.name}`, 20, 35);
+            doc.text(`Code: ${project.code || 'N/A'}`, 20, 42);
+            doc.text(`Owner: ${project.owner || 'N/A'}`, 20, 49);
+            doc.text(`Progress: ${calculateProjectProgress(project)}%`, 20, 56);
+            doc.text(`Export Date: ${new Date().toLocaleDateString()}`, 20, 63);
+
+            let y = 80;
+            STAGES.forEach(stage => {
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                const progress = calculateStageProgress(project, stage.id);
+                doc.setFontSize(11);
+                doc.text(`${stage.id} - ${stage.name}: ${progress.completed}/${progress.total} (${progress.percent}%)`, 20, y);
+                y += 8;
+            });
+
+            doc.save(`${project.name}_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            
+            // 提示使用者也可用瀏覽器列印
+            alert('PDF 已下載！\n\n提示：如需完整中文支援，建議使用瀏覽器的「列印」功能（Ctrl+P），選擇「另存為 PDF」。');
+        }
+    </script>
+</body>
+</html>
